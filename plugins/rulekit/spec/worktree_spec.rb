@@ -37,4 +37,19 @@ RSpec.describe 'a git worktree session' do
     expect(out).to be_silent
     expect(out.exit_code).to eq(0)
   end
+
+  it 'fires a tool rule on a Read of a matching file in the worktree' do
+    project.rules('tools.yml', <<~YAML)
+      no_service_reads:
+        type: block
+        tools: [Read]
+        files: ["app/services/**/*"]
+        context: Do not open service files.
+    YAML
+
+    out = project.tool_hook(project.read(worktree_path('app/services/kept.rb')))
+
+    expect(out).to fire('no_service_reads')
+    expect(out.exit_code).to eq(2)
+  end
 end
