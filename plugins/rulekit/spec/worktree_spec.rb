@@ -52,4 +52,15 @@ RSpec.describe 'a git worktree session' do
     expect(out).to fire('no_service_reads')
     expect(out.exit_code).to eq(2)
   end
+
+  it 'catches a shell write in the worktree' do
+    project.sweep({ session_id: 's', cwd: project.worktree }, '--bootstrap')
+    File.write(worktree_path('app/services/sneaky.rb'), "class Sneaky\n  default_scope { all }\nend\n")
+
+    out = project.sweep(project.bash('cat > app/services/sneaky.rb').merge(cwd: project.worktree))
+
+    expect(out).to fire('no_default_scope')
+    expect(out.stdout).to include('"decision":"block"')
+    expect(out.exit_code).to eq(0)
+  end
 end
